@@ -203,10 +203,10 @@ socketIo.on('connection', socket => {
           socket.emit('server:message', data);
           return;
         }
-        else if(response.result.action == 'respond_with_ee_with_birthdays')
+        else if(response.result.action == 'respond_with_ee_with_birthdays') /////////////////////////////
         {
           data.message = 'There are 4 people with birthdays this month. They are:';
-          data.uxstatic='<table>' + 
+          data.uxstatic='<table style="border-collapse: collapse; border: 1px solid black;">' + 
                           '<tr><td><b>Steve Austin</b></td><td><b>January 25th</b></td></tr>' +
                           '<tr><td><b>Bob Jackson</b></td><td><b>January 27th</b></td></tr>' +
                           '<tr><td><b>Mary Jones</b></td><td><b>January 24th</b></td></tr>' +
@@ -215,7 +215,32 @@ socketIo.on('connection', socket => {
           socket.emit('server:message', data);
           return;
         }
-        else if(response.result.action == 'respond_show_top_paychecks')
+        else if(response.result.action == 'respond_average_payrun') ////////////////////////////////////
+        {
+          var group_name = response.result.contexts[0].parameters.group_name;
+          var payroll_year = response.result.contexts[0].parameters.payroll_year;
+          if(group_name == undefined)
+          {
+            data.message = 'Sorry, you must first define what pay group you are interested in.';
+            socket.emit('server:message', data);
+            return;
+          }
+
+          restClient.get('http://localhost:8090/api/sweetpi/v0/payroll/' + group_name + '/payrunAvg', function (restParams, restResponse) {
+            console.log(restParams);
+            console.log('Length: ' + restParams.length);
+   
+            data.message = 'Here are the average payroll details for ' + group_name + ' in ' + payroll_year + ':';
+
+            data.uxstatic='<table cellpadding="6" style="border-collapse: collapse; border: 1px solid black;"><tr><th>Avg Gross</th><th align=center>Avg Net</th></tr>';
+            data.uxstatic += '<tr><td>' + formatDollar(restParams.gross, '$') + '</td><td align=center>' + formatDollar(restParams.net, '$') + '</td></tr>';
+            data.uxstatic += '</table>';
+            socket.emit('server:message', data);
+            
+          }); 
+          return;
+        }
+        else if(response.result.action == 'respond_show_top_paychecks') ///////////////////////////////
         {
           var group_name = response.result.contexts[0].parameters.group_name;
           var order = response.result.contexts[0].parameters.ordinal;
@@ -250,11 +275,11 @@ socketIo.on('connection', socket => {
             }
 
             if(restParams.length > 1)
-              data.message = 'Found more than one person in '+ group_name + ' with that last name:';
+              data.message = 'Here are the top 10 related paychecks for '+ group_name + ':';
             else
               data.message = 'Here you go:';
 
-            data.uxstatic='<table cellpadding="6"><tr><th>ID</th><th>First Name</th><th align=center>Last Name</th><th align=center>Address</th>';
+            data.uxstatic='<table cellpadding="6" style="border-collapse: collapse; border: 1px solid black;"><tr><th>ID</th><th>First Name</th><th align=center>Last Name</th><th align=center>Address</th>';
             data.uxstatic += '<th align=center>State</th><th align=center>Gross</th><th align=center>Net</th><th align=center>Bonus</th>';
             data.uxstatic += '</tr>';
             function payrunLister(item, index) {
@@ -270,9 +295,8 @@ socketIo.on('connection', socket => {
             socket.emit('server:message', data);            
           }); 
           return;
-
         }
-        else if(response.result.action == 'respond_individual_paycheck_summary')
+        else if(response.result.action == 'respond_individual_paycheck_summary') /////////////////////////////
         {
           if(response.result.actionIncomplete)
           {
@@ -303,7 +327,7 @@ socketIo.on('connection', socket => {
             else
               data.message = 'Here you go:';
 
-            data.uxstatic='<table cellpadding="6"><tr><th>ID</th><th>First Name</th><th align=center>Last Name</th><th align=center>Address</th>';
+            data.uxstatic='<table cellpadding="6" style="border-collapse: collapse; border: 1px solid black;"><tr><th>ID</th><th>First Name</th><th align=center>Last Name</th><th align=center>Address</th>';
             data.uxstatic += '<th align=center>State</th><th align=center>Gross</th><th align=center>Net</th>';
             data.uxstatic += '</tr>';
             function payrunLister(item, index) {
@@ -320,7 +344,7 @@ socketIo.on('connection', socket => {
           return;
 
         }
-        else if(response.result.action == 'respond_show_payperiod_details_byorder')
+        else if(response.result.action == 'respond_show_payperiod_details_byorder') //////////////////////////////
         {
           if(response.result.actionIncomplete)
           {
@@ -347,7 +371,7 @@ socketIo.on('connection', socket => {
             else {
               data.message = 'Here are more details on group '+ group_name + ' for pay period ending: ' + restParams.payrunDate;
 
-              data.uxstatic='<table cellpadding="6"><tr><th>Pay Checks</th><th align=center>Net Pay</th><th align=center>Gross Pay</th></tr>';
+              data.uxstatic='<table cellpadding="6" style="border-collapse: collapse; border: 1px solid black;"><tr><th>Pay Checks</th><th align=center>Net Pay</th><th align=center>Gross Pay</th></tr>';
               data.uxstatic += '<tr><td align=center>' + restParams.payrunCount + '</td><td align=center>' + formatDollar(restParams.net, '$') + '</td><td align=center>' + formatDollar(restParams.gross, '$') + '</td></tr>';
               data.uxstatic += '</table>';
               socket.emit('server:message', data);
@@ -355,18 +379,14 @@ socketIo.on('connection', socket => {
           }); 
           return;
         }
-        else if(response.result.action == 'respond_show_payruns')
+        else if(response.result.action == 'respond_show_payruns') /////////////////////////////////////
         {
-
           if(response.result.actionIncomplete)
           {
             data.message = response.result.fulfillment.speech;
             socket.emit('server:message', data);
             return;
           }
-
-          //data.message = 'Let me look, give me a second......';
-          //socket.emit('server:message', data);
 
           var group_name = response.result.contexts[0].parameters.group_name;
 
@@ -382,7 +402,7 @@ socketIo.on('connection', socket => {
             else {
               data.message = 'Found ' + restParams.length + ' payruns for ' + group_name + '. Here you go:';
 
-              data.uxstatic='<table cellpadding="6"><tr><th>Period End-Date</th><th align=center>Paid Workers</th></tr>';
+              data.uxstatic='<table cellpadding="6" style="border-collapse: collapse; border: 1px solid black;"><tr><th>Period End-Date</th><th align=center>Paid Workers</th></tr>';
               function payrunLister(item, index) {
                 data.uxstatic += '<tr><td>' + item.payrunDate + '</td><td align=center>' + item.payrunCount + '</td></tr>';
               }      
@@ -394,12 +414,12 @@ socketIo.on('connection', socket => {
           }); 
           return;
         }
-        else if(response.result.action == 'show_paycheck')
+        else if(response.result.action == 'show_paycheck') /////////////////////////////
         {
           if(response.result.parameters.pay_point_in_time == 'next')
           {
             data.message = 'Here is what your paycheck is looking like so far for the next pay cycle:';
-            data.uxstatic='<table>' + 
+            data.uxstatic='<table style="border-collapse: collapse; border: 1px solid black;">' + 
                             '<tr><td>Gross:</td><td><b>$3,500.00</b></td></tr>' +
                             '<tr><td>Net:</td><td><b>$3,000.00</b></td></tr>' +
                             '<tr><td>Taxes:</td><td><b>$700.00</b></td></tr>' +
@@ -409,7 +429,7 @@ socketIo.on('connection', socket => {
           else
           {
             data.message = 'Here is a breakdown summary of your ' + response.result.parameters.pay_point_in_time + ' paycheck:';
-            data.uxstatic='<table>' + 
+            data.uxstatic='<table style="border-collapse: collapse; border: 1px solid black;">' + 
                             '<tr><td>Gross:</td><td><b>$2,500.00</b></td></tr>' +
                             '<tr><td>Net:</td><td><b>$2,000.00</b></td></tr>' +
                             '<tr><td>Taxes:</td><td><b>$500.00</b></td></tr>' +
@@ -419,7 +439,7 @@ socketIo.on('connection', socket => {
           socket.emit('server:message', data);
           return;
         }
-        else
+        else //////////////////////////////////////
         {
           data.message = 'Sorry, did not get that?'
           socket.emit('server:message', data);
